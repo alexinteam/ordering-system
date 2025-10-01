@@ -34,6 +34,8 @@ func NewServer() *Server {
 
 	router.GET("/health/orders", handlers.CheckOrderService)
 	router.GET("/health/billing", handlers.CheckBillingService)
+	router.GET("/health/warehouse", handlers.CheckWarehouseService)
+	router.GET("/health/delivery", handlers.CheckDeliveryService)
 	router.GET("/health/notifications", handlers.CheckNotificationService)
 
 	api := router.Group("/api/v1")
@@ -49,8 +51,27 @@ func NewServer() *Server {
 			billing.POST("/accounts", handlers.CreateAccount)
 			billing.POST("/payments/deposit", handlers.DepositMoney)
 			billing.POST("/payments/withdraw", handlers.WithdrawMoney)
+			billing.POST("/payments/process", handlers.ProcessPayment)
+			billing.POST("/payments/refund", handlers.RefundPayment)
 			billing.GET("/accounts/:user_id/balance", handlers.GetBalance)
-			billing.GET("/payments/:user_id", handlers.GetPayments)
+			billing.GET("/payments/user/:user_id", handlers.GetPayments)
+			billing.GET("/payments/payment/:payment_id", handlers.GetPayment)
+		}
+
+		warehouse := api.Group("/warehouse")
+		{
+			warehouse.GET("/products", handlers.GetProducts)
+			warehouse.GET("/products/:product_id", handlers.GetProduct)
+			warehouse.POST("/products/reserve", handlers.ReserveProduct)
+			warehouse.POST("/products/cancel-reservation", handlers.CancelReservation)
+		}
+
+		delivery := api.Group("/delivery")
+		{
+			delivery.GET("/couriers", handlers.GetCouriers)
+			delivery.GET("/couriers/:courier_id/slots", handlers.GetCourierSlots)
+			delivery.POST("/reserve", handlers.ReserveDelivery)
+			delivery.POST("/cancel-reservation", handlers.CancelDeliveryReservation)
 		}
 
 		notifications := api.Group("/notifications")

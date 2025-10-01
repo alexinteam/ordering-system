@@ -1,19 +1,15 @@
 package services
 
 import (
+	"fmt"
+	"log"
+	"time"
+
 	"billing-service/internal/dto"
 	"billing-service/internal/models"
-	"errors"
-	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-)
-
-var (
-	ErrAccountNotFound   = errors.New("account not found")
-	ErrAccountExists     = errors.New("account already exists")
-	ErrInsufficientFunds = errors.New("insufficient funds")
 )
 
 type BillingService struct {
@@ -21,124 +17,129 @@ type BillingService struct {
 }
 
 func NewBillingService(db *gorm.DB) *BillingService {
-	return &BillingService{db: db}
+	return &BillingService{
+		db: db,
+	}
 }
 
-// CreateAccount creates a new billing account for a user
-func (s *BillingService) CreateAccount(userID string) (*models.Account, error) {
-	var existingAccount models.Account
-	err := s.db.Where("user_id = ?", userID).First(&existingAccount).Error
-	if err == nil {
-		return nil, ErrAccountExists
-	}
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, err
+func (s *BillingService) ProcessPayment(req *dto.ProcessPaymentRequest) (*dto.ProcessPaymentResponse, error) {
+	log.Printf("Processing payment for order %s, amount: %.2f", req.OrderID, req.Amount)
+
+	// Создаем платеж
+	payment := &models.Payment{
+		ID:            uuid.New().String(),
+		OrderID:       req.OrderID,
+		UserID:        req.UserID,
+		Amount:        req.Amount,
+		Status:        "pending",
+		PaymentMethod: req.PaymentMethod,
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
 	}
 
+	// Сохраняем в базу
+	if err := s.db.Create(payment).Error; err != nil {
+		log.Printf("Failed to create payment: %v", err)
+		return nil, fmt.Errorf("failed to create payment: %v", err)
+	}
+
+	// Симулируем обработку платежа
+	success := s.simulatePaymentProcessing(req.Amount, req.PaymentMethod)
+
+	if success {
+		payment.Status = "completed"
+		payment.UpdatedAt = time.Now()
+		s.db.Save(payment)
+
+		log.Printf("Payment %s completed successfully", payment.ID)
+		return &dto.ProcessPaymentResponse{
+			PaymentID: payment.ID,
+			Status:    "completed",
+			Message:   "Payment processed successfully",
+		}, nil
+	} else {
+		payment.Status = "failed"
+		payment.UpdatedAt = time.Now()
+		s.db.Save(payment)
+
+		log.Printf("Payment %s failed", payment.ID)
+		return &dto.ProcessPaymentResponse{
+			PaymentID: payment.ID,
+			Status:    "failed",
+			Message:   "Payment processing failed",
+		}, nil
+	}
+}
+
+func (s *BillingService) RefundPayment(req *dto.RefundPaymentRequest) (*dto.RefundPaymentResponse, error) {
+	log.Printf("Processing refund for payment %s", req.PaymentID)
+
+	var payment models.Payment
+	if err := s.db.Where("id = ?", req.PaymentID).First(&payment).Error; err != nil {
+		return nil, fmt.Errorf("payment not found: %v", err)
+	}
+
+	if payment.Status != "completed" {
+		return nil, fmt.Errorf("only completed payments can be refunded")
+	}
+
+	// Обновляем статус
+	payment.Status = "refunded"
+	payment.UpdatedAt = time.Now()
+	s.db.Save(&payment)
+
+	log.Printf("Payment %s refunded successfully", payment.ID)
+	return &dto.RefundPaymentResponse{
+		Status:  "refunded",
+		Message: "Payment refunded successfully",
+	}, nil
+}
+
+func (s *BillingService) GetPayment(paymentID string) (*models.Payment, error) {
+	var payment models.Payment
+	if err := s.db.Where("id = ?", paymentID).First(&payment).Error; err != nil {
+		return nil, fmt.Errorf("payment not found: %v", err)
+	}
+	return &payment, nil
+}
+
+func (s *BillingService) CreateAccount(req *dto.CreateAccountRequest) (*dto.CreateAccountResponse, error) {
+	// Проверяем, существует ли уже аккаунт
+	var existingAccount models.Account
+	if err := s.db.Where("user_id = ?", req.UserID).First(&existingAccount).Error; err == nil {
+		return &dto.CreateAccountResponse{
+			AccountID: existingAccount.ID,
+			Message:   "Account already exists",
+		}, nil
+	}
+
+	// Создаем новый аккаунт
 	account := &models.Account{
 		ID:        uuid.New().String(),
-		UserID:    userID,
-		Balance:   0.0,
+		UserID:    req.UserID,
+		Balance:   1000.0, // Начальный баланс
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
 
 	if err := s.db.Create(account).Error; err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create account: %v", err)
 	}
 
-	return account, nil
-}
-
-// GetAccount retrieves an account by user ID
-func (s *BillingService) GetAccount(userID string) (*models.Account, error) {
-	var account models.Account
-	err := s.db.Where("user_id = ?", userID).First(&account).Error
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrAccountNotFound
-		}
-		return nil, err
-	}
-	return &account, nil
-}
-
-// DepositMoney adds money to an account
-func (s *BillingService) DepositMoney(userID string, amount float64) (*dto.DepositResponse, error) {
-	var account models.Account
-	err := s.db.Where("user_id = ?", userID).First(&account).Error
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrAccountNotFound
-		}
-		return nil, err
-	}
-
-	// Start transaction
-	tx := s.db.Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		}
-	}()
-
-	// Update balance
-	newBalance := account.Balance + amount
-	if err := tx.Model(&account).Update("balance", newBalance).Error; err != nil {
-		tx.Rollback()
-		return nil, err
-	}
-
-	// Create payment record
-	payment := &models.Payment{
-		ID:        uuid.New().String(),
-		UserID:    userID,
-		Amount:    amount,
-		Type:      "deposit",
-		Status:    "success",
-		CreatedAt: time.Now(),
-	}
-
-	if err := tx.Create(payment).Error; err != nil {
-		tx.Rollback()
-		return nil, err
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		return nil, err
-	}
-
-	return &dto.DepositResponse{
-		Success:    true,
-		NewBalance: newBalance,
-		Message:    "Money deposited successfully",
+	log.Printf("Account created for user %s with ID %s", req.UserID, account.ID)
+	return &dto.CreateAccountResponse{
+		AccountID: account.ID,
+		Message:   "Account created successfully",
 	}, nil
 }
 
-// WithdrawMoney withdraws money from an account
-func (s *BillingService) WithdrawMoney(userID string, amount float64) (*dto.WithdrawResponse, error) {
+func (s *BillingService) WithdrawMoney(req *dto.WithdrawRequest) (*dto.WithdrawResponse, error) {
 	var account models.Account
-	err := s.db.Where("user_id = ?", userID).First(&account).Error
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrAccountNotFound
-		}
-		return nil, err
+	if err := s.db.Where("user_id = ?", req.UserID).First(&account).Error; err != nil {
+		return nil, fmt.Errorf("account not found: %v", err)
 	}
 
-	// Check if sufficient funds
-	if account.Balance < amount {
-		// Create failed payment record
-		payment := &models.Payment{
-			ID:        uuid.New().String(),
-			UserID:    userID,
-			Amount:    amount,
-			Type:      "withdraw",
-			Status:    "failed",
-			CreatedAt: time.Now(),
-		}
-		s.db.Create(payment)
-
+	if account.Balance < req.Amount {
 		return &dto.WithdrawResponse{
 			Success:    false,
 			NewBalance: account.Balance,
@@ -146,56 +147,30 @@ func (s *BillingService) WithdrawMoney(userID string, amount float64) (*dto.With
 		}, nil
 	}
 
-	// Start transaction
-	tx := s.db.Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		}
-	}()
+	// Списываем деньги
+	account.Balance -= req.Amount
+	account.UpdatedAt = time.Now()
+	s.db.Save(&account)
 
-	// Update balance
-	newBalance := account.Balance - amount
-	if err := tx.Model(&account).Update("balance", newBalance).Error; err != nil {
-		tx.Rollback()
-		return nil, err
-	}
-
-	// Create payment record
-	payment := &models.Payment{
-		ID:        uuid.New().String(),
-		UserID:    userID,
-		Amount:    amount,
-		Type:      "withdraw",
-		Status:    "success",
-		CreatedAt: time.Now(),
-	}
-
-	if err := tx.Create(payment).Error; err != nil {
-		tx.Rollback()
-		return nil, err
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		return nil, err
-	}
-
+	log.Printf("Withdrawn %.2f from account %s. New balance: %.2f", req.Amount, account.ID, account.Balance)
 	return &dto.WithdrawResponse{
 		Success:    true,
-		NewBalance: newBalance,
+		NewBalance: account.Balance,
 		Message:    "Money withdrawn successfully",
 	}, nil
 }
 
-// GetPayments retrieves payment history for a user
-func (s *BillingService) GetPayments(userID string, limit int) ([]models.Payment, error) {
-	var payments []models.Payment
-	err := s.db.Where("user_id = ?", userID).
-		Order("created_at DESC").
-		Limit(limit).
-		Find(&payments).Error
-	if err != nil {
-		return nil, err
+func (s *BillingService) simulatePaymentProcessing(amount float64, method string) bool {
+	// Платежи на сумму больше 1000 всегда проходят
+	if amount > 1000 {
+		return true
 	}
-	return payments, nil
+
+	// Платежи через карту имеют 90% успешности
+	if method == "card" {
+		return time.Now().UnixNano()%10 < 9
+	}
+
+	// Остальные методы имеют 80% успешности
+	return time.Now().UnixNano()%10 < 8
 }

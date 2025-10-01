@@ -1,44 +1,44 @@
 package dto
 
-// CreateAccountRequest represents the request to create a new account
+type ProcessPaymentRequest struct {
+	OrderID       string  `json:"order_id" binding:"required"`
+	UserID        string  `json:"user_id" binding:"required"`
+	Amount        float64 `json:"amount" binding:"required"`
+	PaymentMethod string  `json:"payment_method" binding:"required"`
+}
+
+type ProcessPaymentResponse struct {
+	PaymentID string `json:"payment_id"`
+	Status    string `json:"status"`
+	Message   string `json:"message"`
+}
+
+type RefundPaymentRequest struct {
+	PaymentID string `json:"payment_id" binding:"required"`
+	Reason    string `json:"reason"`
+}
+
+type RefundPaymentResponse struct {
+	Status  string `json:"status"`
+	Message string `json:"message"`
+}
+
 type CreateAccountRequest struct {
 	UserID string `json:"user_id" binding:"required"`
 }
 
-// CreateAccountResponse represents the response after creating an account
 type CreateAccountResponse struct {
-	AccountID string  `json:"account_id"`
-	Balance   float64 `json:"balance"`
+	AccountID string `json:"account_id"`
+	Message   string `json:"message"`
 }
 
-// WithdrawRequest represents the request to withdraw money from an account
 type WithdrawRequest struct {
 	UserID string  `json:"user_id" binding:"required"`
-	Amount float64 `json:"amount" binding:"required,gt=0"`
+	Amount float64 `json:"amount" binding:"required"`
 }
 
-// WithdrawResponse represents the response after withdrawing money
 type WithdrawResponse struct {
 	Success    bool    `json:"success"`
 	NewBalance float64 `json:"new_balance"`
 	Message    string  `json:"message"`
-}
-
-// DepositRequest represents the request to deposit money to an account
-type DepositRequest struct {
-	UserID string  `json:"user_id" binding:"required"`
-	Amount float64 `json:"amount" binding:"required,gt=0"`
-}
-
-// DepositResponse represents the response after depositing money
-type DepositResponse struct {
-	Success    bool    `json:"success"`
-	NewBalance float64 `json:"new_balance"`
-	Message    string  `json:"message"`
-}
-
-// BalanceResponse represents the response with account balance
-type BalanceResponse struct {
-	UserID  string  `json:"user_id"`
-	Balance float64 `json:"balance"`
 }

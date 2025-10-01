@@ -2,33 +2,24 @@ FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
-# Копируем go mod файлы
+RUN apk add --no-cache git
+
 COPY go.mod go.sum ./
 
-# Загружаем зависимости
 RUN go mod download
 
-# Копируем исходный код
 COPY . .
 
-# Собираем приложение
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o main .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o billing-service .
 
-# Финальный образ
 FROM alpine:latest
 
 RUN apk --no-cache add ca-certificates
 
 WORKDIR /root/
 
-# Копируем бинарный файл
-COPY --from=builder /app/main .
+COPY --from=builder /app/billing-service .
 
-# Копируем env файл
-COPY --from=builder /app/env.example .
+EXPOSE 8082
 
-# Открываем порт
-EXPOSE 8081
-
-# Запускаем приложение
-CMD ["./main", "server"]
+CMD ["./billing-service", "server"]

@@ -1,9 +1,10 @@
 package main
 
 import (
-	"billing-service/internal/server"
 	"log"
 	"os"
+
+	"billing-service/internal/server"
 
 	"github.com/spf13/cobra"
 )
@@ -20,7 +21,7 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 			port := os.Getenv("PORT")
 			if port == "" {
-				port = "8081"
+				port = "8082"
 			}
 
 			srv := server.NewServer()

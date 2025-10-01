@@ -21,4 +21,14 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
+  name: delivery-system
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: warehouse-system
+---
+apiVersion: v1
+kind: Namespace
+metadata:
   name: infrastructure

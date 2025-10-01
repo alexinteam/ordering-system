@@ -1,0 +1,527 @@
+{
+	"info": {
+		"_postman_id": "api-gateway-order-system-tests",
+		"name": "Тесты системы заказов через API Gateway",
+		"description": "Система заказов через API Gateway",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [],
+	"item": [
+		{
+			"name": "Сервис биллинга",
+			"item": [
+				{
+					"name": "Создать аккаунт",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user_id\": \"user123\"\n}"
+						},
+						"url": {
+							"raw": "http://arch.homework/api/v1/billing/accounts",
+							"host": ["http://arch.homework"],
+							"path": ["api", "v1", "billing", "accounts"]
+						}
+					}
+				},
+				{
+					"name": "Пополнить счет",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user_id\": \"user123\",\n    \"amount\": 1000.0\n}"
+						},
+						"url": {
+							"raw": "http://arch.homework/api/v1/billing/payments/deposit",
+							"host": ["http://arch.homework"],
+							"path": ["api", "v1", "billing", "payments", "deposit"]
+						}
+					}
+				},
+				{
+					"name": "Обработать платеж",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"order_id\": \"order_test_123\",\n  \"user_id\": \"user_123\",\n  \"amount\": 1500.00,\n  \"payment_method\": \"card\"\n}"
+						},
+						"url": {
+							"raw": "http://arch.homework/api/v1/billing/payments/process",
+							"host": ["http://arch.homework"],
+							"path": ["api", "v1", "billing", "payments", "process"]
+						}
+					}
+				},
+				{
+					"name": "Возврат платежа",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"payment_id\": \"pay_1234567890\",\n  \"reason\": \"Order cancelled\"\n}"
+						},
+						"url": {
+							"raw": "http://arch.homework/api/v1/billing/payments/refund",
+							"host": ["http://arch.homework"],
+							"path": ["api", "v1", "billing", "payments", "refund"]
+						}
+					}
+				},
+				{
+					"name": "Получить баланс",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://arch.homework/api/v1/billing/accounts/user123/balance",
+							"host": ["http://arch.homework"],
+							"path": ["api", "v1", "billing", "accounts", "user123", "balance"]
+						}
+					}
+				},
+				{
+					"name": "Получить платеж",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://arch.homework/api/v1/billing/payments/pay_1234567890",
+							"host": ["http://arch.homework"],
+							"path": ["api", "v1", "billing", "payments", "pay_1234567890"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Сервис склада",
+			"item": [
+				{
+					"name": "Получить товары",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://arch.homework/api/v1/warehouse/products",
+							"host": ["http://arch.homework"],
+							"path": ["api", "v1", "warehouse", "products"]
+						}
+					}
+				},
+				{
+					"name": "Получить товар по ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://arch.homework/api/v1/warehouse/products/prod_1",
+							"host": ["http://arch.homework"],
+							"path": ["api", "v1", "warehouse", "products", "prod_1"]
+						}
+					}
+				},
+				{
+					"name": "Зарезервировать товар",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"order_id\": \"order_test_123\",\n  \"product_id\": \"prod_1\",\n  \"quantity\": 1\n}"
+						},
+						"url": {
+							"raw": "http://arch.homework/api/v1/warehouse/products/reserve",
+							"host": ["http://arch.homework"],
+							"path": ["api", "v1", "warehouse", "products", "reserve"]
+						}
+					}
+				},
+				{
+					"name": "Отменить резервацию",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reservation_id\": \"res_1234567890\",\n  \"reason\": \"Order cancelled\"\n}"
+						},
+						"url": {
+							"raw": "http://arch.homework/api/v1/warehouse/products/cancel-reservation",
+							"host": ["http://arch.homework"],
+							"path": ["api", "v1", "warehouse", "products", "cancel-reservation"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Сервис доставки",
+			"item": [
+				{
+					"name": "Получить курьеров",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://arch.homework/api/v1/delivery/couriers",
+							"host": ["http://arch.homework"],
+							"path": ["api", "v1", "delivery", "couriers"]
+						}
+					}
+				},
+				{
+					"name": "Получить слоты курьера",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://arch.homework/api/v1/delivery/couriers/courier_1/slots",
+							"host": ["http://arch.homework"],
+							"path": ["api", "v1", "delivery", "couriers", "courier_1", "slots"]
+						}
+					}
+				},
+				{
+					"name": "Зарезервировать доставку",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"order_id\": \"order_test_123\",\n  \"courier_id\": \"courier_1\",\n  \"slot_id\": \"slot_courier_1_2024-01-01_09:00\",\n  \"address\": \"Москва, ул. Тверская, д. 1\"\n}"
+						},
+						"url": {
+							"raw": "http://arch.homework/api/v1/delivery/reserve",
+							"host": ["http://arch.homework"],
+							"path": ["api", "v1", "delivery", "reserve"]
+						}
+					}
+				},
+				{
+					"name": "Отменить резервацию доставки",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reservation_id\": \"del_1234567890\",\n  \"reason\": \"Order cancelled\"\n}"
+						},
+						"url": {
+							"raw": "http://arch.homework/api/v1/delivery/cancel-reservation",
+							"host": ["http://arch.homework"],
+							"path": ["api", "v1", "delivery", "cancel-reservation"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Управление заказами (Saga)",
+			"item": [
+				{
+					"name": "Создать заказ - Успешно (Saga)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_id\": \"user_123\",\n  \"amount\": 1500.00,\n  \"email\": \"test@example.com\",\n  \"product_id\": \"prod_1\",\n  \"quantity\": 1,\n  \"address\": \"Москва, ул. Тверская, д. 1\"\n}"
+						},
+						"url": {
+							"raw": "http://arch.homework/api/v1/orders",
+							"host": ["http://arch.homework"],
+							"path": ["api", "v1", "orders"]
+						},
+						"description": "Создание заказа через Saga - все шаги должны выполниться успешно"
+					}
+				},
+				{
+					"name": "Создать заказ - Недостаточно товара (Saga)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_id\": \"user_456\",\n  \"amount\": 800.00,\n  \"email\": \"test2@example.com\",\n  \"product_id\": \"prod_2\",\n  \"quantity\": 100,\n  \"address\": \"Санкт-Петербург, Невский проспект, д. 10\"\n}"
+						},
+						"url": {
+							"raw": "http://arch.homework/api/v1/orders",
+							"host": ["http://arch.homework"],
+							"path": ["api", "v1", "orders"]
+						},
+						"description": "Создание заказа через Saga - недостаточно товара, должен произойти откат"
+					}
+				},
+				{
+					"name": "Создать заказ - Ошибка платежа (Saga)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_id\": \"user_789\",\n  \"amount\": 50.00,\n  \"email\": \"test3@example.com\",\n  \"product_id\": \"prod_3\",\n  \"quantity\": 1,\n  \"address\": \"Казань, ул. Баумана, д. 5\"\n}"
+						},
+						"url": {
+							"raw": "http://arch.homework/api/v1/orders",
+							"host": ["http://arch.homework"],
+							"path": ["api", "v1", "orders"]
+						},
+						"description": "Создание заказа через Saga - ошибка платежа, должен произойти откат"
+					}
+				},
+				{
+					"name": "Получить заказы пользователя",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://arch.homework/api/v1/orders/user_123",
+							"host": ["http://arch.homework"],
+							"path": ["api", "v1", "orders", "user_123"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Сервис уведомлений",
+			"item": [
+				{
+					"name": "Получить уведомления пользователя",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://arch.homework/api/v1/notifications/user_123",
+							"host": ["http://arch.homework"],
+							"path": ["api", "v1", "notifications", "user_123"]
+						}
+					}
+				},
+				{
+					"name": "Создать уведомление",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_id\": \"user_123\",\n  \"email\": \"test@example.com\",\n  \"type\": \"info\",\n  \"message\": \"Test notification\"\n}"
+						},
+						"url": {
+							"raw": "http://arch.homework/api/v1/notifications",
+							"host": ["http://arch.homework"],
+							"path": ["api", "v1", "notifications"]
+						}
+					}
+				},
+				{
+					"name": "Получить все уведомления",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://arch.homework/api/v1/notifications",
+							"host": ["http://arch.homework"],
+							"path": ["api", "v1", "notifications"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Полный цикл заказа",
+			"item": [
+				{
+					"name": "1. Проверить здоровье всех сервисов",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://arch.homework/health",
+							"host": ["http://arch.homework"],
+							"path": ["health"]
+						}
+					}
+				},
+				{
+					"name": "2. Create User Account",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user_id\": \"user_flow_test\"\n}"
+						},
+						"url": {
+							"raw": "http://arch.homework/api/v1/billing/accounts",
+							"host": ["http://arch.homework"],
+							"path": ["api", "v1", "billing", "accounts"]
+						}
+					}
+				},
+				{
+					"name": "3. Deposit Money",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user_id\": \"user_flow_test\",\n    \"amount\": 2000.0\n}"
+						},
+						"url": {
+							"raw": "http://arch.homework/api/v1/billing/payments/deposit",
+							"host": ["http://arch.homework"],
+							"path": ["api", "v1", "billing", "payments", "deposit"]
+						}
+					}
+				},
+				{
+					"name": "4. Check Available Products",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://arch.homework/api/v1/warehouse/products",
+							"host": ["http://arch.homework"],
+							"path": ["api", "v1", "warehouse", "products"]
+						}
+					}
+				},
+				{
+					"name": "5. Check Available Couriers",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://arch.homework/api/v1/delivery/couriers",
+							"host": ["http://arch.homework"],
+							"path": ["api", "v1", "delivery", "couriers"]
+						}
+					}
+				},
+				{
+					"name": "6. Create Complete Order",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_id\": \"user_flow_test\",\n  \"amount\": 1500.00,\n  \"email\": \"flow_test@example.com\",\n  \"product_id\": \"prod_1\",\n  \"quantity\": 1,\n  \"address\": \"Москва, ул. Тверская, д. 1\"\n}"
+						},
+						"url": {
+							"raw": "http://arch.homework/api/v1/orders",
+							"host": ["http://arch.homework"],
+							"path": ["api", "v1", "orders"]
+						}
+					}
+				},
+				{
+					"name": "7. Check Order Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://arch.homework/api/v1/orders/user_flow_test",
+							"host": ["http://arch.homework"],
+							"path": ["api", "v1", "orders", "user_flow_test"]
+						}
+					}
+				},
+				{
+					"name": "8. Check Notifications",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://arch.homework/api/v1/notifications/user_flow_test",
+							"host": ["http://arch.homework"],
+							"path": ["api", "v1", "notifications", "user_flow_test"]
+						}
+					}
+				}
+			]
+		}
+	]
+}

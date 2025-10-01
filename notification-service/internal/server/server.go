@@ -17,21 +17,18 @@ type Server struct {
 }
 
 func NewServer() *Server {
-	// Initialize database
 	cfg := config.Load()
 	db, err := database.Connect(cfg.Database)
 	if err != nil {
 		panic("Failed to connect to database: " + err.Error())
 	}
 
-	// Run migrations
 	if err := database.Migrate(db); err != nil {
 		panic("Failed to migrate database: " + err.Error())
 	}
 
 	notificationService := services.NewNotificationService(db)
 
-	// Initialize RabbitMQ consumer
 	rabbitmqURL := os.Getenv("RABBITMQ_URL")
 	if rabbitmqURL == "" {
 		rabbitmqURL = "amqp://admin:admin@rabbitmq.infrastructure.svc.cluster.local:5672/"
@@ -41,7 +38,6 @@ func NewServer() *Server {
 	consumer, err := rabbitmq.NewConsumer(rabbitmqURL, notificationService)
 	if err == nil {
 		log.Printf("RabbitMQ consumer created successfully")
-		// Start consumer in background
 		go consumer.Start()
 	} else {
 		log.Printf("Failed to create RabbitMQ consumer: %v", err)
@@ -57,7 +53,6 @@ func NewServer() *Server {
 
 	api := router.Group("/api/v1")
 	{
-		// Notification management
 		api.POST("/notifications", handlers.SendNotification)
 		api.GET("/notifications/:user_id", handlers.GetNotifications)
 		api.GET("/notifications", handlers.GetAllNotifications)

@@ -8,7 +8,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// Connect establishes a connection to the database
 func Connect(cfg config.DatabaseConfig) (*gorm.DB, error) {
 	dsn := cfg.GetDSN()
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
@@ -19,7 +18,6 @@ func Connect(cfg config.DatabaseConfig) (*gorm.DB, error) {
 	return db, nil
 }
 
-// Migrate runs database migrations
 func Migrate(db *gorm.DB) error {
 	return db.AutoMigrate(
 		&models.Notification{},

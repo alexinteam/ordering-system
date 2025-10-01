@@ -22,11 +22,15 @@ spec:
         - containerPort: 8080
         env:
         - name: ORDER_SERVICE_URL
-          value: "http://order-service.order-system.svc.cluster.local:8080"
+          value: "http://order-service.order-system.svc.cluster.local:8081"
         - name: BILLING_SERVICE_URL
-          value: "http://billing-service.billing-system.svc.cluster.local:8081"
+          value: "http://billing-service.billing-system.svc.cluster.local:8082"
+        - name: WAREHOUSE_SERVICE_URL
+          value: "http://warehouse-service.warehouse-system.svc.cluster.local:8083"
+        - name: DELIVERY_SERVICE_URL
+          value: "http://delivery-service.delivery-system.svc.cluster.local:8084"
         - name: NOTIFICATION_SERVICE_URL
-          value: "http://notification-service.notification-system.svc.cluster.local:8082"
+          value: "http://notification-service.notification-system.svc.cluster.local:8085"
         resources:
           requests:
             memory: "64Mi"

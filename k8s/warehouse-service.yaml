@@ -1,0 +1,115 @@
+# PostgreSQL для Warehouse Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-warehouse
+  namespace: warehouse-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-warehouse
+  template:
+    metadata:
+      labels:
+        app: postgres-warehouse
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: "warehouse"
+        - name: POSTGRES_USER
+          value: "postgres"
+        - name: POSTGRES_PASSWORD
+          value: "postgres"
+        - name: PGDATA
+          value: "/var/lib/postgresql/data/pgdata"
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+      volumes:
+      - name: postgres-storage
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-warehouse
+  namespace: warehouse-system
+spec:
+  selector:
+    app: postgres-warehouse
+  ports:
+  - port: 5432
+    targetPort: 5432
+  type: ClusterIP
+---
+# Warehouse Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: warehouse-service
+  namespace: warehouse-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: warehouse-service
+  template:
+    metadata:
+      labels:
+        app: warehouse-service
+    spec:
+      initContainers:
+      - name: wait-for-postgres
+        image: postgres:15
+        command: ['sh', '-c', 'until pg_isready -h postgres-warehouse.warehouse-system.svc.cluster.local -p 5432; do echo waiting for postgres; sleep 2; done;']
+      containers:
+      - name: warehouse-service
+        image: alexinteam/warehouse-service:latest
+        ports:
+        - containerPort: 8083
+        env:
+        - name: DB_HOST
+          value: "postgres-warehouse.warehouse-system.svc.cluster.local"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_USER
+          value: "postgres"
+        - name: DB_PASSWORD
+          value: "postgres"
+        - name: DB_NAME
+          value: "warehouse"
+        - name: PORT
+          value: "8083"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: warehouse-service
+  namespace: warehouse-system
+spec:
+  selector:
+    app: warehouse-service
+  ports:
+  - port: 8083
+    targetPort: 8083
+  type: ClusterIP

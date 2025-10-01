@@ -14,7 +14,7 @@ type Config struct {
 }
 
 type DatabaseConfig struct {
-	Host     string `envconfig:"DB_HOST" default:"localhost"`
+	Host     string `envconfig:"DB_HOST" default:"postgres-service"`
 	Port     int    `envconfig:"DB_PORT" default:"5432"`
 	User     string `envconfig:"DB_USER" default:"postgres"`
 	Password string `envconfig:"DB_PASSWORD" default:"postgres"`
@@ -24,7 +24,7 @@ type DatabaseConfig struct {
 
 type ServerConfig struct {
 	Host string `envconfig:"SERVER_HOST" default:"0.0.0.0"`
-	Port int    `envconfig:"SERVER_PORT" default:"8081"`
+	Port int    `envconfig:"SERVER_PORT" default:"8082"`
 }
 
 func Load() *Config {

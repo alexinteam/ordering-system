@@ -1,3 +1,61 @@
+# PostgreSQL для Order Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-orders
+  namespace: order-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-orders
+  template:
+    metadata:
+      labels:
+        app: postgres-orders
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: "orders"
+        - name: POSTGRES_USER
+          value: "postgres"
+        - name: POSTGRES_PASSWORD
+          value: "postgres"
+        - name: PGDATA
+          value: "/var/lib/postgresql/data/pgdata"
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+      volumes:
+      - name: postgres-storage
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-orders
+  namespace: order-system
+spec:
+  selector:
+    app: postgres-orders
+  ports:
+  - port: 5432
+    targetPort: 5432
+  type: ClusterIP
+---
+# Order Service
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -19,10 +77,10 @@ spec:
       - name: order-service
         image: alexinteam/order-service:latest
         ports:
-        - containerPort: 8080
+        - containerPort: 8081
         env:
         - name: DB_HOST
-          value: "postgres-service"
+          value: "postgres-orders"
         - name: DB_PORT
           value: "5432"
         - name: DB_USER
@@ -34,9 +92,13 @@ spec:
         - name: DB_SSL_MODE
           value: "disable"
         - name: BILLING_SERVICE_URL
-          value: "http://billing-service.billing-system.svc.cluster.local:8081"
+          value: "http://billing-service.billing-system.svc.cluster.local:8082"
+        - name: WAREHOUSE_SERVICE_URL
+          value: "http://warehouse-service.warehouse-system.svc.cluster.local:8083"
+        - name: DELIVERY_SERVICE_URL
+          value: "http://delivery-service.delivery-system.svc.cluster.local:8084"
         - name: NOTIFICATION_SERVICE_URL
-          value: "http://notification-service.notification-system.svc.cluster.local:8082"
+          value: "http://notification-service.notification-system.svc.cluster.local:8085"
         - name: RABBITMQ_URL
           value: "amqp://admin:admin@rabbitmq.infrastructure.svc.cluster.local:5672/"
         resources:
@@ -49,13 +111,13 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 8080
+            port: 8081
           initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
           httpGet:
             path: /health
-            port: 8080
+            port: 8081
           initialDelaySeconds: 5
           periodSeconds: 5
 ---
@@ -70,68 +132,7 @@ spec:
   selector:
     app: order-service
   ports:
-  - port: 8080
-    targetPort: 8080
-    protocol: TCP
-  type: ClusterIP
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: postgres
-  namespace: order-system
-  labels:
-    app: postgres
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: postgres
-  template:
-    metadata:
-      labels:
-        app: postgres
-    spec:
-      containers:
-      - name: postgres
-        image: postgres:15
-        ports:
-        - containerPort: 5432
-        env:
-        - name: POSTGRES_DB
-          value: "orders"
-        - name: POSTGRES_USER
-          value: "postgres"
-        - name: POSTGRES_PASSWORD
-          value: "postgres"
-        - name: PGDATA
-          value: "/var/lib/postgresql/data/pgdata"
-        volumeMounts:
-        - name: postgres-storage
-          mountPath: /var/lib/postgresql/data
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "100m"
-          limits:
-            memory: "512Mi"
-            cpu: "200m"
-      volumes:
-      - name: postgres-storage
-        emptyDir: {}
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: postgres-service
-  namespace: order-system
-  labels:
-    app: postgres
-spec:
-  selector:
-    app: postgres
-  ports:
-  - port: 5432
-    targetPort: 5432
+  - port: 8081
+    targetPort: 8081
     protocol: TCP
   type: ClusterIP

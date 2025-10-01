@@ -11,14 +11,18 @@ import (
 type Handlers struct {
 	orderServiceURL        string
 	billingServiceURL      string
+	warehouseServiceURL    string
+	deliveryServiceURL     string
 	notificationServiceURL string
 }
 
 func NewHandlers() *Handlers {
 	return &Handlers{
-		orderServiceURL:        getEnv("ORDER_SERVICE_URL", "http://order-service:8080"),
-		billingServiceURL:      getEnv("BILLING_SERVICE_URL", "http://billing-service:8081"),
-		notificationServiceURL: getEnv("NOTIFICATION_SERVICE_URL", "http://notification-service:8082"),
+		orderServiceURL:        getEnv("ORDER_SERVICE_URL", "http://order-service:8081"),
+		billingServiceURL:      getEnv("BILLING_SERVICE_URL", "http://billing-service:8082"),
+		warehouseServiceURL:    getEnv("WAREHOUSE_SERVICE_URL", "http://warehouse-service:8083"),
+		deliveryServiceURL:     getEnv("DELIVERY_SERVICE_URL", "http://delivery-service:8084"),
+		notificationServiceURL: getEnv("NOTIFICATION_SERVICE_URL", "http://notification-service:8085"),
 	}
 }
 
@@ -129,4 +133,62 @@ func (h *Handlers) CheckBillingService(c *gin.Context) {
 
 func (h *Handlers) CheckNotificationService(c *gin.Context) {
 	h.proxyRequest(c, h.notificationServiceURL, "/health")
+}
+
+func (h *Handlers) CheckWarehouseService(c *gin.Context) {
+	h.proxyRequest(c, h.warehouseServiceURL, "/health")
+}
+
+func (h *Handlers) CheckDeliveryService(c *gin.Context) {
+	h.proxyRequest(c, h.deliveryServiceURL, "/health")
+}
+
+// Warehouse Service Routes
+func (h *Handlers) GetProducts(c *gin.Context) {
+	h.proxyRequest(c, h.warehouseServiceURL, "/api/v1/products")
+}
+
+func (h *Handlers) GetProduct(c *gin.Context) {
+	productID := c.Param("product_id")
+	h.proxyRequest(c, h.warehouseServiceURL, "/api/v1/products/"+productID)
+}
+
+func (h *Handlers) ReserveProduct(c *gin.Context) {
+	h.proxyRequest(c, h.warehouseServiceURL, "/api/v1/products/reserve")
+}
+
+func (h *Handlers) CancelReservation(c *gin.Context) {
+	h.proxyRequest(c, h.warehouseServiceURL, "/api/v1/products/cancel-reservation")
+}
+
+// Delivery Service Routes
+func (h *Handlers) GetCouriers(c *gin.Context) {
+	h.proxyRequest(c, h.deliveryServiceURL, "/api/v1/couriers")
+}
+
+func (h *Handlers) GetCourierSlots(c *gin.Context) {
+	courierID := c.Param("courier_id")
+	h.proxyRequest(c, h.deliveryServiceURL, "/api/v1/couriers/"+courierID+"/slots")
+}
+
+func (h *Handlers) ReserveDelivery(c *gin.Context) {
+	h.proxyRequest(c, h.deliveryServiceURL, "/api/v1/delivery/reserve")
+}
+
+func (h *Handlers) CancelDeliveryReservation(c *gin.Context) {
+	h.proxyRequest(c, h.deliveryServiceURL, "/api/v1/delivery/cancel-reservation")
+}
+
+// Billing Service Additional Routes
+func (h *Handlers) ProcessPayment(c *gin.Context) {
+	h.proxyRequest(c, h.billingServiceURL, "/api/v1/payments/process")
+}
+
+func (h *Handlers) RefundPayment(c *gin.Context) {
+	h.proxyRequest(c, h.billingServiceURL, "/api/v1/payments/refund")
+}
+
+func (h *Handlers) GetPayment(c *gin.Context) {
+	paymentID := c.Param("payment_id")
+	h.proxyRequest(c, h.billingServiceURL, "/api/v1/payments/"+paymentID)
 }

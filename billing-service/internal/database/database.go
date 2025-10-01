@@ -1,6 +1,8 @@
 package database
 
 import (
+	"log"
+
 	"billing-service/internal/config"
 	"billing-service/internal/models"
 
@@ -9,18 +11,18 @@ import (
 )
 
 func Connect(cfg config.DatabaseConfig) (*gorm.DB, error) {
-	dsn := cfg.GetDSN()
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(cfg.GetDSN()), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
 
+	log.Println("Billing service connected to database successfully")
 	return db, nil
 }
 
 func Migrate(db *gorm.DB) error {
-	return db.AutoMigrate(
-		&models.Account{},
-		&models.Payment{},
-	)
+	if err := db.AutoMigrate(&models.Payment{}, &models.Account{}); err != nil {
+		return err
+	}
+	return nil
 }

@@ -24,7 +24,7 @@ type DatabaseConfig struct {
 
 type ServerConfig struct {
 	Host string `envconfig:"SERVER_HOST" default:"0.0.0.0"`
-	Port int    `envconfig:"SERVER_PORT" default:"8082"`
+	Port int    `envconfig:"SERVER_PORT" default:"8085"`
 }
 
 func Load() *Config {

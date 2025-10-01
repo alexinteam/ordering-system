@@ -20,7 +20,7 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 			port := os.Getenv("PORT")
 			if port == "" {
-				port = "8082"
+				port = "8085"
 			}
 
 			srv := server.NewServer()
